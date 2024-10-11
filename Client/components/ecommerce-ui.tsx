@@ -15,6 +15,13 @@ import {
 import { useState, useEffect } from 'react'
 import { Badge } from './ui/badge'
 
+interface CartItem {
+  id: number;
+  name: string;
+  quantity: number;
+  price: number;
+}
+
 export function EcommerceUi() {
   
   const products = [
@@ -32,6 +39,40 @@ export function EcommerceUi() {
 
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [cartItems,setCartItems] = useState<CartItem[]>([])
+  const [total,setTotal] = useState(0)
+  
+  //Adding items to the cart
+  const addToCart = (product: { id: number; name: string; price: number }) => {
+    setCartItems((prevItems) => {
+      const existingItem = prevItems.find(item => item.id === product.id)
+      if (existingItem) {
+        return prevItems.map(item =>
+          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+        )
+      } else {
+        return [...prevItems, { ...product, quantity: 1 }]
+      }
+    })
+  }
+
+
+  // Function to increase the quantity of an item in the cart
+  const increaseQuantity = (id:number) => {
+    setCartItems((prevItems) =>
+      prevItems.map(item => item.id === id ? { ...item, quantity: item.quantity + 1 } : item)
+    )
+  }
+
+  // Function to decrease the quantity of an item in the cart
+  const decreaseQuantity = (id:number) => {
+    setCartItems((prevItems) =>
+      prevItems.map(item =>
+        item.id === id && item.quantity > 1 ? { ...item, quantity: item.quantity - 1 } : item
+      )
+    )
+  }
+
   const filteredProducts = products.filter((product) => {
     const matchesCategory = selectedCategory === 'all' || product.category.toLowerCase() === selectedCategory;
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -96,7 +137,7 @@ export function EcommerceUi() {
                     </div>
                   </CardContent>
                   <CardFooter>
-                    <Button className="w-full">Add to Cart</Button>
+                    <Button className="w-full" onClick={()=> addToCart(product)}>Add to Cart</Button>
                   </CardFooter>
                 </Card>
               ))}
@@ -106,27 +147,32 @@ export function EcommerceUi() {
             <Card>
               <CardContent className="p-4">
                 <h2 className="text-lg font-semibold mb-4">Cart Summary</h2>
-                {[
-                  { id: 1, name: "Sleek Watch", quantity: 1, price: 199.99 },
-                  { id: 2, name: "Designer Sunglasses", quantity: 2, price: 129.99 },
-                ].map((item) => (
+                {cartItems.map((item) => (
                   <div key={item.id} className="flex justify-between items-center mb-2">
                     <span>{item.name}</span>
                     <div className="flex items-center">
-                      <Button variant="outline" size="icon" className="h-8 w-8">
-                        <span className="sr-only">Decrease quantity</span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => decreaseQuantity(item.id)}
+                      >
                         <span aria-hidden="true">-</span>
                       </Button>
                       <span className="mx-2">{item.quantity}</span>
-                      <Button variant="outline" size="icon" className="h-8 w-8">
-                        <span className="sr-only">Increase quantity</span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => increaseQuantity(item.id)}
+                      >
                         <span aria-hidden="true">+</span>
                       </Button>
                     </div>
                   </div>
                 ))}
                 <div className="mt-4 text-right">
-                  <strong>Total: $459.97</strong>
+                  <strong>Total: ${total.toFixed(2)}</strong>
                 </div>
               </CardContent>
               <CardFooter>
