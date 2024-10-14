@@ -79,6 +79,11 @@ export function EcommerceUi() {
     return matchesCategory && matchesSearch;
   });
 
+  useEffect(() => {
+    const newTotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    setTotal(newTotal);
+  }, [cartItems]);
+  
 
   
 
