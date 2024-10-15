@@ -2,8 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-
+import { Card, CardContent, CardFooter, CardHeader,CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { SmileIcon , Search, Car, Trash, Trash2} from 'lucide-react';
 // Type for product data
 type Product = {
   product_id: number;
@@ -23,10 +32,14 @@ export default function EcommerceUi() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [user, setUser] = useState<any>(null); // State to hold user info (username)
   const [loading, setLoading] = useState<boolean>(true);
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('all')
   const [error, setError] = useState<string | null>(null);
   const [transactionComplete, setTransactionComplete] = useState<boolean>(false);
   const [transactionDetails, setTransactionDetails] = useState<CartItem[]>([]);
   const [finalTotalPrice, setFinalTotalPrice] = useState<number>(0); // New state for storing the total price at checkout
+
+
 
   // Fetch user information from localStorage
   useEffect(() => {
@@ -74,7 +87,12 @@ export default function EcommerceUi() {
     const newCart = cart.filter((_, i) => i !== index);
     setCart(newCart); // Update the cart state
   };
-
+  //Filter product and search product
+  const filteredProducts = products.filter((product) => {
+    const matchesCategory = selectedCategory === 'all' || product.category.toLowerCase() === selectedCategory;
+    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
   // Calculate total price of the cart
   const totalPrice = cart.reduce(
     (total, item) => total + parseFloat(item.price.toString()), // Sum up prices of each item in the cart
@@ -126,17 +144,56 @@ export default function EcommerceUi() {
   return (
     <div className="flex">
       {/* Main content displaying products */}
+      
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <header className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-1 sm:px-3 lg:px-8 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold text-gray-900">Modern Shop</h1>
+            <div className="relative">
+              <SmileIcon/>
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                3
+              </span>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-grow">
+              <Input
+                type="text"
+                placeholder="Search products..."
+                className="w-full pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            </div>
+            <Select onValueChange={(value) => setSelectedCategory(value)}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="electronics">Electronics</SelectItem>
+                <SelectItem value="clothing">Clothing</SelectItem>
+                <SelectItem value="books">Books</SelectItem>
+                <SelectItem value="home & garden">Home & Garden</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </header>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map((product) => (
+          {filteredProducts.map((product) => (
             <Card key={product.product_id}>
               <CardContent className="p-0">
-                <img src={product.image} alt={product.name} className="w-full h-48 object-cover" />
+                <img src={product.image} alt={product.name} className="w-full h-48 object-fit p-1 rounded-md" />
                 <div className="p-4">
                   <h3 className="text-lg font-semibold">{product.name}</h3>
                   <p className="text-gray-600">
                     ${typeof product.price === 'number' ? product.price.toFixed(2) : parseFloat(product.price).toFixed(2)}
                   </p>
+                  <Badge className="mt-2 bg-gray-200 text-gray-600">{product.category}</Badge>
                 </div>
               </CardContent>
               <CardFooter>
@@ -148,28 +205,47 @@ export default function EcommerceUi() {
       </main>
 
       {/* Sidebar for Cart */}
-      <aside className="w-80 bg-gray-100 p-4">
-        <h2 className="text-lg font-semibold">Cart</h2>
-        {cart.length === 0 ? (
-          <p>Your cart is empty</p>
-        ) : (
-          <div>
-            <ul>
-              {cart.map((item, index) => (
-                <li key={index} className="flex justify-between my-2">
-                  <span>{item.name}</span>
-                  <span>${parseFloat(item.price.toString()).toFixed(2)}</span>
-                  <Button onClick={() => removeFromCart(index)} size="sm">Remove</Button>
+      <aside>
+        <Card className="w-80 mx-2 my-5" style={{ minHeight: "200px", maxHeight: "60vh" }}>
+          <CardHeader>
+            <CardTitle>Cart</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {cart.length === 0 ? (
+              <p>Your cart is empty</p>
+            ) : (
+              <ul className="space-y-2">
+                {cart.map((item, index) => (
+                  <li key={index} className="flex items-center space-x-2">
+                  <span className="text-sm truncate flex-grow">{item.name}</span>
+                  <span className="text-sm font-medium whitespace-nowrap">
+                    ${parseFloat(item.price.toString()).toFixed(2)}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeFromCart(index)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Trash className="h-4 w-4" />
+                    <span className="sr-only">Remove item</span>
+                  </Button>
                 </li>
-              ))}
-            </ul>
-            <div className="mt-4">
-              <strong>Total: ${totalPrice.toFixed(2)}</strong>
-            </div>
-            <Button className="w-full mt-4" onClick={handleCheckout}>Checkout</Button>
-          </div>
-        )}
+                ))}
+              </ul>
+            )}
+          </CardContent>
+          {cart.length > 0 && (
+            <CardFooter className="flex flex-col items-stretch gap-4">
+              <div className="text-lg font-bold">Total: ${totalPrice.toFixed(2)}</div>
+              <Button className="w-full" onClick={handleCheckout}>
+                Checkout
+              </Button>
+            </CardFooter>
+          )}
+        </Card>
       </aside>
+      
 
       {/* Transaction Complete Modal */}
       {transactionComplete && (
